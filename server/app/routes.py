@@ -3,8 +3,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import db, User, Movie, TVShow, Club, Post, Comment, Rating, WatchedMovie
 from functools import wraps
 
-# api = Blueprint('api', __name__)
-
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
