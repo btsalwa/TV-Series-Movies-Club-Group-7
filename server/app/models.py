@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 def fetch_and_store_tmdb_data():
     API_KEY = "e407ef47003f178633c02269142f8b86"
-    BASE_URL = "https://api.themoviedb.org/3"
+    BASE_URL = "https://api.themoviedb.org/3/movie/550"
     
     # Fetch Movies
     movies_endpoint = f"{BASE_URL}/movie/now_playing?api_key={API_KEY}"
