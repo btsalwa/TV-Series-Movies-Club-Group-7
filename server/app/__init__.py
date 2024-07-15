@@ -2,7 +2,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from app.config import Config
 from flask_migrate import Migrate
-# from werkzeug.security import generate_password_hash, check_password_hash
+from app.models import models
+
 
 
 db = SQLAlchemy()

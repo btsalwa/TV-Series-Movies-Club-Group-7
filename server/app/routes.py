@@ -1,5 +1,4 @@
-from flask import Blueprint, request, make_response, jsonify, session,  current_app as app
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import request, make_response, jsonify, session,  current_app as app
 from app.models import db, User, Movie, TVShow, Club, Post, Comment, Rating, WatchedMovie
 from functools import wraps
 
@@ -88,7 +87,8 @@ def get_clubs():
 @login_required
 def create_club():
     data = request.json
-    new_club = Club(name=data['name'], description=data['description'], genre=data['genre'], created_by_id=session['user_id'])
+    new_club = Club(name=data['name'], description=data['description'], 
+                    genre=data['genre'], created_by_id=session['user_id'])
     db.session.add(new_club)
     db.session.commit()
     return jsonify({"msg": "Club created successfully"}), 201
