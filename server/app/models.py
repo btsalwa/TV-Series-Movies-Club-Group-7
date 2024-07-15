@@ -1,6 +1,52 @@
 from app import db
+import requests
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+
+def fetch_and_store_tmdb_data():
+    API_KEY = "e407ef47003f178633c02269142f8b86"
+    BASE_URL = "https://api.themoviedb.org/3"
+    
+    # Fetch Movies
+    movies_endpoint = f"{BASE_URL}/movie/now_playing?api_key={API_KEY}"
+    movies_response = requests.get(movies_endpoint)
+    if movies_response.status_code == 200:
+        movies_data = movies_response.json()
+        for movie in movies_data["results"]:
+            existing_movie = Movie.query.filter_by(tmdb_id=movie["id"]).first()
+            if existing_movie:
+                continue
+            new_movie = Movie(
+                tmdb_id=movie["id"],
+                title=movie["title"],
+                overview=movie["overview"],
+                release_date=datetime.strptime(movie["release_date"], "%Y-%m-%d").date(),
+                poster_path=movie["poster_path"]
+            )
+            db.session.add(new_movie)
+    else:
+        print(f"Error fetching movies data from TMDB: {movies_response.status_code}")
+
+    # Fetch TV Shows
+    tv_shows_endpoint = f"{BASE_URL}/tv/on_the_air?api_key={API_KEY}"
+    tv_shows_response = requests.get(tv_shows_endpoint)
+    if tv_shows_response.status_code == 200:
+        tv_shows_data = tv_shows_response.json()
+        for tv_show in tv_shows_data["results"]:
+            existing_tv_show = TVShow.query.filter_by(tmdb_id=tv_show["id"]).first()
+            if existing_tv_show:
+                continue
+            new_tv_show = TVShow(
+                tmdb_id=tv_show["id"],
+                name=tv_show["name"],
+                overview=tv_show["overview"],
+                first_air_date=datetime.strptime(tv_show["first_air_date"], "%Y-%m-%d").date(),
+                poster_path=tv_show["poster_path"]
+            )
+            db.session.add(new_tv_show)
+    else:
+        print(f"Error fetching TV shows data from TMDB: {tv_shows_response.status_code}")
+    db.session.commit()
 
 user_clubs = db.Table('user_clubs',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
