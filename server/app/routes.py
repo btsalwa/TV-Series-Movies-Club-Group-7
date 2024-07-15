@@ -1,6 +1,77 @@
-from flask import request, make_response, jsonify, session,  current_app as app
+from flask import request, jsonify, session, current_app as app
 from app.models import db, User, Movie, TVShow, Club, Post, Comment, Rating, WatchedMovie
 from functools import wraps
+import requests
+import logging
+from datetime import datetime
+
+# Error logging configuration
+logging.basicConfig(level=logging.ERROR)
+
+def get_tmdb_url(endpoint: str) -> str:
+    return f"{app.config['TMDB_BASE_URL']}/{endpoint}"
+
+@app.route('/movies', methods=['GET'])
+def get_movies():
+    try:
+        endpoint = get_tmdb_url('movie/now_playing')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US",
+            "page": 1
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "results" in data:
+            movies = [
+                {
+                    "id": movie["id"],
+                    "title": movie["title"],
+                    "overview": movie["overview"],
+                    "release_date": movie["release_date"],
+                    "poster_path": movie["poster_path"]
+                }
+                for movie in data["results"]
+            ]
+            return jsonify(movies), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'results' key: {data}")
+            return jsonify({"error": "Failed to fetch movies"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching movies from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch movies"}), 500
+
+@app.route('/shows', methods=['GET'])
+def get_shows():
+    try:
+        endpoint = get_tmdb_url('tv/on_the_air')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US",
+            "page": 1
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "results" in data:
+            shows = [
+                {
+                    "id": show["id"],
+                    "name": show["name"],
+                    "overview": show["overview"],
+                    "first_air_date": show["first_air_date"],
+                    "poster_path": show["poster_path"]
+                }
+                for show in data["results"]
+            ]
+            return jsonify(shows), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'results' key: {data}")
+            return jsonify({"error": "Failed to fetch TV shows"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching TV shows from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch TV shows"}), 500
 
 def login_required(f):
     @wraps(f)
