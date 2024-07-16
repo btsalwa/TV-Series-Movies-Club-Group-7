@@ -9,7 +9,7 @@ from datetime import datetime
 logging.basicConfig(level=logging.ERROR)
 
 def get_tmdb_url(endpoint: str) -> str:
-    return f"{app.config['TMDB_BASE_URL']}/{endpoint}"
+    return f"{app.config['TMDB_BASE_URL']}/{endpoint}" 
 
 @app.route('/movies', methods=['GET'])
 def get_movies():
