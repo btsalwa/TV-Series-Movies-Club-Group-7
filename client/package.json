@@ -1,7 +1,7 @@
 {
   "name": "client",
   "private": true,
-  "proxy":"http://127.0.0.1:10000",
+  "proxy":"https://tv-series-movies-club-group-7.onrender.com",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
