@@ -28,27 +28,4 @@ export const getClubs = async () => {
 // //   },
 // // });
 
-// // export const getMovies = async () => {
-// //   const response = await tmdbApi.get('/movie/popular', {
-// //     params: {
-// //       api_key: TMDB_API_KEY,
-// //       language: 'en-US',
-// //       page: 1,
-// //     },
-// //   });
-// //   return response.data.results;
-// // };
-
-// // export const getTvShows = async () => {
-// //   const response = await tmdbApi.get('/tv/popular', {
-// //     params: {
-// //       api_key: TMDB_API_KEY,
-// //       language: 'en-US',
-// //       page: 1,
-// //     },
-// //   });
-// //   return response.data.results;
-
-// // };
-
 // // Add more API calls for other movie and TV show data

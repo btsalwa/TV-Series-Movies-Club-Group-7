@@ -9,12 +9,12 @@ from datetime import datetime
 logging.basicConfig(level=logging.ERROR)
 
 def get_tmdb_url(endpoint: str) -> str:
-    return f"{app.config['TMDB_BASE_URL']}/{endpoint}" 
+    return f"{app.config['TMDB_BASE_URL']}/{endpoint}"
 
-@app.route('/movies', methods=['GET'])
-def get_movies():
+@app.route('/discover/movies', methods=['GET'])
+def discover_movies():
     try:
-        endpoint = get_tmdb_url('movie/now_playing')
+        endpoint = get_tmdb_url('discover/movie')
         params = {
             "api_key": app.config['TMDB_API_KEY'],
             "language": "en-US",
@@ -42,10 +42,10 @@ def get_movies():
         logging.error(f"Error fetching movies from TMDB API: {e}")
         return jsonify({"error": "Failed to fetch movies"}), 500
 
-@app.route('/shows', methods=['GET'])
-def get_shows():
+@app.route('/discover/tv', methods=['GET'])
+def discover_tv_shows():
     try:
-        endpoint = get_tmdb_url('tv/on_the_air')
+        endpoint = get_tmdb_url('discover/tv')
         params = {
             "api_key": app.config['TMDB_API_KEY'],
             "language": "en-US",
@@ -55,7 +55,7 @@ def get_shows():
         response.raise_for_status()
         data = response.json()
         if "results" in data:
-            shows = [
+            tv_shows = [
                 {
                     "id": show["id"],
                     "name": show["name"],
@@ -65,13 +65,213 @@ def get_shows():
                 }
                 for show in data["results"]
             ]
-            return jsonify(shows), 200
+            return jsonify(tv_shows), 200
         else:
             logging.error(f"TMDB API response does not contain 'results' key: {data}")
             return jsonify({"error": "Failed to fetch TV shows"}), 500
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching TV shows from TMDB API: {e}")
         return jsonify({"error": "Failed to fetch TV shows"}), 500
+
+@app.route('/find/<int:tmdb_id>', methods=['GET'])
+def find_by_id(tmdb_id):
+    try:
+        endpoint = get_tmdb_url(f'find/{tmdb_id}')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US",
+            "external_source": "imdb_id"
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "movie_results" in data or "tv_results" in data:
+            result = {
+                "id": data["movie_results"][0]["id"] if data["movie_results"] else data["tv_results"][0]["id"],
+                "title": data["movie_results"][0]["title"] if data["movie_results"] else data["tv_results"][0]["name"],
+                "overview": data["movie_results"][0]["overview"] if data["movie_results"] else data["tv_results"][0]["overview"],
+                "release_date": data["movie_results"][0]["release_date"] if data["movie_results"] else data["tv_results"][0]["first_air_date"],
+                "poster_path": data["movie_results"][0]["poster_path"] if data["movie_results"] else data["tv_results"][0]["poster_path"]
+            }
+            return jsonify(result), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'movie_results' or 'tv_results' key: {data}")
+            return jsonify({"error": "Failed to find item by ID"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error finding item by ID from TMDB API: {e}")
+        return jsonify({"error": "Failed to find item by ID"}), 500
+
+@app.route('/genres/movies', methods=['GET'])
+def get_movie_genres():
+    try:
+        endpoint = get_tmdb_url('genre/movie/list')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US"
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "genres" in data:
+            genres = [{"id": genre["id"], "name": genre["name"]} for genre in data["genres"]]
+            return jsonify(genres), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'genres' key: {data}")
+            return jsonify({"error": "Failed to fetch movie genres"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching movie genres from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch movie genres"}), 500
+
+@app.route('/genres/tv', methods=['GET'])
+def get_tv_genres():
+    try:
+        endpoint = get_tmdb_url('genre/tv/list')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US"
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "genres" in data:
+            genres = [{"id": genre["id"], "name": genre["name"]} for genre in data["genres"]]
+            return jsonify(genres), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'genres' key: {data}")
+            return jsonify({"error": "Failed to fetch TV genres"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching TV genres from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch TV genres"}), 500
+
+@app.route('/guest-session/rated/movies', methods=['GET'])
+def get_rated_movies():
+    try:
+        endpoint = get_tmdb_url('guest_session/new/rated/movies')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US"
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "results" in data:
+            rated_movies = [
+                {
+                    "id": movie["id"],
+                    "title": movie["title"],
+                    "rating": movie["rating"]
+                }
+                for movie in data["results"]
+            ]
+            return jsonify(rated_movies), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'results' key: {data}")
+            return jsonify({"error": "Failed to fetch rated movies"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching rated movies from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch rated movies"}), 500
+
+@app.route('/guest-session/rated/tv', methods=['GET'])
+def get_rated_tv_shows():
+    try:
+        endpoint = get_tmdb_url('guest_session/new/rated/tv')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US"
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "results" in data:
+            rated_tv_shows = [
+                {
+                    "id": show["id"],
+                    "name": show["name"],
+                    "rating": show["rating"]
+                }
+                for show in data["results"]
+            ]
+            return jsonify(rated_tv_shows), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'results' key: {data}")
+            return jsonify({"error": "Failed to fetch rated TV shows"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching rated TV shows from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch rated TV shows"}), 500
+
+@app.route('/guest-session/rated/tv-episodes', methods=['GET'])
+def get_rated_tv_episodes():
+    try:
+        endpoint = get_tmdb_url('guest_session/new/rated/tv/episodes')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US"
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "results" in data:
+            rated_tv_episodes = [
+                {
+                    "id": episode["id"],
+                    "name": episode["name"],
+                    "rating": episode["rating"]
+                }
+                for episode in data["results"]
+            ]
+            return jsonify(rated_tv_episodes), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'results' key: {data}")
+            return jsonify({"error": "Failed to fetch rated TV episodes"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching rated TV episodes from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch rated TV episodes"}), 500
+
+@app.route('/keywords/<int:keyword_id>', methods=['GET'])
+def get_keyword_details(keyword_id):
+    try:
+        endpoint = get_tmdb_url(f'keyword/{keyword_id}')
+        params = {
+            "api_key": app.config['TMDB_API_KEY']
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        return jsonify(data), 200
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching keyword details from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch keyword details"}), 500
+
+@app.route('/keywords/<int:keyword_id>/movies', methods=['GET'])
+def get_movies_by_keyword(keyword_id):
+    try:
+        endpoint = get_tmdb_url(f'keyword/{keyword_id}/movies')
+        params = {
+            "api_key": app.config['TMDB_API_KEY'],
+            "language": "en-US",
+            "include_adult": False
+        }
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+        if "results" in data:
+            movies = [
+                {
+                    "id": movie["id"],
+                    "title": movie["title"],
+                    "overview": movie["overview"],
+                    "release_date": movie["release_date"],
+                    "poster_path": movie["poster_path"]
+                }
+                for movie in data["results"]
+            ]
+            return jsonify(movies), 200
+        else:
+            logging.error(f"TMDB API response does not contain 'results' key: {data}")
+            return jsonify({"error": "Failed to fetch movies by keyword"}), 500
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching movies by keyword from TMDB API: {e}")
+        return jsonify({"error": "Failed to fetch movies by keyword"}), 500
 
 def login_required(f):
     @wraps(f)
@@ -101,6 +301,7 @@ def login():
     user = User.query.filter_by(username=data['username']).first()
     if user and user.check_password(data['password']):
         session['user_id'] = user.id
+        session['username'] = user.username
         return jsonify({"msg": "Logged in successfully"}), 200
     return jsonify({"msg": "Invalid username or password"}), 401
 
@@ -108,6 +309,7 @@ def login():
 @login_required
 def logout():
     session.pop('user_id', None)
+    session.pop('username', None)
     return jsonify({"msg": "Logged out successfully"}), 200
 
 @app.route('/profile', methods=['GET', 'PUT'])
